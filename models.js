@@ -20,9 +20,9 @@ blogSchema.methods.serialize = function(){
     id:this._id,
     title:this.title,
     content:this.content,
-    author:this.author
+    author:this.nameString
   };
 };
 
-const Blog = mongoose.model('Blog Post', blogSchema);
-module.exports = { Blog };
+const BlogPost = mongoose.model('Blog Post', blogSchema);
+module.exports = { BlogPost };
