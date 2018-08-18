@@ -1,14 +1,16 @@
 'use strict';
 
 const express = require('express');
+const morgan = require('morgan');
 const mongoose = require('mongoose');
 
-mongoose.Promise = global.promise;
+mongoose.Promise = global.Promise;
 
 const { PORT, DATABASE_URL } = require('./config');
 const { BlogPost } = require('./models');
 
 const app = express();
+app.use(morgan('common'));
 app.use(express.json());
 
 app.get('/posts',  (req, res) => {
@@ -116,8 +118,6 @@ function runServer(databaseUrl, port = PORT) {
   });
 }
 
-// this function closes the server, and returns a promise. we'll
-// use it in our integration tests later.
 function closeServer() {
   return mongoose.disconnect().then(() => {
     return new Promise((resolve, reject) => {
