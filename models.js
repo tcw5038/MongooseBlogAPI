@@ -25,5 +25,36 @@ blogSchema.methods.serialize = function(){
   };
 };
 
+blogSchema.pre('find', function(next) {//middleware that populates the author field when we make get requests to the blog posts
+  this.populate('author');
+  next();
+});
+
+blogSchema.pre('findOne', function(next){//middleware that populates the author field when we make get requests to a specific blog post
+  this.populate('author');
+  next();
+});
+
+const authorSchema = mongoose.Schema({
+  firstName: 'string',
+  lastName: 'string',
+  userName: {
+    type: 'string',
+    unique: true//I am assuming this is designed to check whether a username has already been taken by someone else in the database
+  }
+});
+
+const commentSchema = mongoose.Schema({
+  content:'string'
+});
+
+
+
+
+
+const Author = mongoose.model('Author', authorSchema);
 const BlogPost = mongoose.model('BlogPost', blogSchema);
-module.exports = { BlogPost };
+const Comment = mongoose.model('Comment', commentSchema);
+//added for new assignment
+
+module.exports = { Author, BlogPost, Comment };//adding author here for us to export

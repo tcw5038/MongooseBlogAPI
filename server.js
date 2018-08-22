@@ -7,13 +7,13 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
 const { PORT, DATABASE_URL } = require('./config');
-const { BlogPost } = require('./models');
+const { BlogPost, Author } = require('./models');
 
 const app = express();
 app.use(morgan('common'));
 app.use(express.json());
 
-app.get('/posts',  (req, res) => {
+app.get('/posts',  (req, res) => {//get to posts
   BlogPost.find()
     .then(blogPosts => {
       res.json({
@@ -26,7 +26,7 @@ app.get('/posts',  (req, res) => {
     });
 });
 
-app.get('/posts:id', (req, res) => {
+app.get('/posts/:id', (req, res) => {//get to specific post
   BlogPost.findById(req.params.id)
     .then(blogPost => res.json(blogPost.serialize()))
     .catch(err => {
@@ -34,6 +34,23 @@ app.get('/posts:id', (req, res) => {
       res.status(500).json({message: 'Internal server error'});
     });
 
+});
+
+app.get('/authors', (req, res) => {//get request to all authors
+  Author.find()
+    .then(authors => {
+      res.json(authors.map(author => {
+        return{
+          id:author._id,
+          name:`${author.firstName} ${author.lastName}`,
+          userName: author.userName
+        };
+      }));
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: 'internal server error' });
+    });
 });
 
 app.post('/posts', (req, res) => {
@@ -59,7 +76,34 @@ app.post('/posts', (req, res) => {
     });
 });
 
-app.put('/posts:id', (req, res) => {
+app.post('/authors', (req, res) => {
+  const requiredFields = ['firstName', 'lastName', 'userName'];
+  for (let i = 0; i < requiredFields.length; i++){
+    const field = requiredFields[i];
+    if(!(field in req.body)){
+      const errorMessage = `Missing ${field} in request body`;
+      console.error(errorMessage);
+      return res.status(400).send(errorMessage);
+    }
+  }
+  Author
+    .create({
+      'firstName': req.body.firstName,
+      'lastName': req.body.lastName,
+      'userName': req.body.userName
+    })
+    .then(author => {
+      BlogPost
+        .create({
+          title: 'another title',
+          content: 'a bunch more amazing words',
+          author: author._id
+        });
+    });
+
+});
+
+app.put('/posts/:id', (req, res) => {
   if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
     const message =
       `Request path id (${req.params.id}) and request body id ` +
@@ -83,7 +127,7 @@ app.put('/posts:id', (req, res) => {
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
-app.delete('/posts:id', (req, res) =>{
+app.delete('/posts/:id', (req, res) =>{
   BlogPost.findByIdAndRemove(req.params.id)
     .then(blogPost => res.status(204).end())
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
