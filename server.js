@@ -12,29 +12,17 @@ const { BlogPost, Author } = require('./models');
 const app = express();
 app.use(morgan('common'));
 app.use(express.json());
-/*
-//DONE
-app.get('/posts',  (req, res) => {//get request to posts
+
+//DONE: works in postman
+app.get('/posts', (req, res) => {//retrieves all of the blogposts in the database
   BlogPost.find()
     .then(blogPosts => {
-      blogPosts.map(blogPost => blogPost.serialize());//lists all the blog posts according to what is in our serialize method in models.js
-    })
-    .catch(err => {
-      console.error(err);
-      res.status(500).json({message: 'Internal server error'});
-    });
-});
-*/
-app.get('/posts', (req, res) => {
-  BlogPost
-    .find()
-    .then(posts => {
-      res.json(posts.map(post => {
+      res.json(blogPosts.map(post => {
         return {
           id: post._id,
           author: post.nameString,
           content: post.content,
-          title: post.title
+          title: post.title,//no comments here as requested in instructions
         };
       }));
     })
@@ -44,9 +32,8 @@ app.get('/posts', (req, res) => {
     });
 });
 
-//DONE
-
-app.get('/posts/:id', (req, res) => {//get to specific post
+//DONE: works in postman
+app.get('/posts/:id', (req, res) => {//get to specific post through accessing "$oid"
   BlogPost.findById(req.params.id)
     .then(blogPost => {
       res.json({
@@ -63,7 +50,7 @@ app.get('/posts/:id', (req, res) => {//get to specific post
     });
 });
 
-//DONE
+//DONE: works in postman
 app.get('/authors', (req, res) => {//get request to all authors
   Author.find()
     .then(authors => {
@@ -95,7 +82,7 @@ app.post('/posts', (req, res) => {
   BlogPost.create({
     title: req.body.title,
     content: req.body.content,
-    author: req.body.author
+    author_id: req.body.author
   })
     .then(blogPost => res.status(201).json(blogPost.serialize()))
     .catch(err => {
@@ -104,7 +91,7 @@ app.post('/posts', (req, res) => {
     });
 });
 
-//DONE
+//DONE: works in postman
 app.post('/authors', (req, res) => {
   const requiredFields = ['firstName', 'lastName', 'userName'];
   for (let i = 0; i < requiredFields.length; i++){
@@ -121,7 +108,7 @@ app.post('/authors', (req, res) => {
       'lastName': req.body.lastName,
       'userName': req.body.userName
     })
-    .then(author => res.status(201).json({
+    .then(author => res.status(201).json({//201 response indicates the success of a 
       _id: author.id,
       name: `${author.firstName} ${author.lastName}`,
       userName: author.userName
@@ -132,7 +119,7 @@ app.post('/authors', (req, res) => {
     });
 });
 
-//DONE
+//DONE: sort of works in postman...updates
 app.put('/posts/:id', (req, res) => {
   if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
     const message =
