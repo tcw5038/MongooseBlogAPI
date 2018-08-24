@@ -148,10 +148,10 @@ app.put('/posts/:id', (req, res) => {
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
-/*
+
 //IN PROGRESS
 app.put('/authors/:id', (req, res) => {
-  if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
+  if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {//standard from previous put requests
     const message =
       `Request path id (${req.params.id}) and request body id ` +
       `(${req.body.id}) must match`;
@@ -160,37 +160,36 @@ app.put('/authors/:id', (req, res) => {
   }
 
   const toUpdate = {};
-  const updateableFields = ['firstName', 'lastName', 'userName'];
+  const updateableFields = ['firstName', 'lastName', 'userName'];//specifying which fields can be updated in the put request
 
   updateableFields.forEach(field => {
-    if (field in req.body) {
+    if (field in req.body) {//update each field based on the information located in the body of the request
       toUpdate[field] = req.body[field];
     }
   });
-  let updatedUsername = toUpdate.userName;
-  //HELP
+  let updatedUsername = toUpdate.userName;//stores the updated username so that it can be used as an identifier
+  //HELP!!!
   Author
-    .findOne({userName: updatedUsername})
+    .findOne({})//we want to check to see if the updated username is already taken by someone else in the system
     .then(authorName => {
       if(){//author name is taken
+        const message = "This username is already taken";
+        return res.status(400).send(message);
+      }
+      else {//update the author
+        Author
+        .findByIdAndUpdate()//finds the id of the author
+        .then(author => { res.status(200).json({//200 status meaning that the request succeeded and we are showing the result of our put request
+          id: author.id,
+          name: `${author.firstName} ${author.lastName}`,
+          userName: author.userName
+        });
+      })
+        .catch(err => res.status(500).json({ message: 'Internal server error' }));
 
       }
-      else{//update the author
-
-      }
-
-
-    }
-    .then(author => res.status(200).json({//200 status meaning that the request succeeded and we are showing the result of our put request
-      id: author.id,
-      name: `${author.firstName} ${author.lastName}`,
-      userName: author.userName
-    }))
-    .catch(err => res.status(500).json({ message: 'Internal server error' }));
-
+    });
 });
-
-*/
 
 //stays the same for this challenge
 app.delete('/posts/:id', (req, res) =>{
@@ -199,11 +198,15 @@ app.delete('/posts/:id', (req, res) =>{
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
-//DONE
+//Doesn't work...help
+
 app.delete('/authors/:id', (req, res) =>{
-  BlogPost.findByIdAndRemove({author: req.params.id})//removes any blog posts with a reference to this author
-    .then(Author.findByIdAndRemove(req.params.id))//removes the actual author
-    .then(author => res.status(204).end())
+  BlogPost.remove({author: req.params.id})//removes any blog posts with a reference to this specific author
+    .then(() => {
+      Author.findByIdAndRemove(req.params.id)//removes the actual author
+        .then(() => {res.status(204).end();
+        });
+    })
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
