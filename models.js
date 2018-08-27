@@ -19,12 +19,12 @@ const commentSchema = mongoose.Schema({
 const blogSchema = mongoose.Schema({//schema for the blog posts
   title: {type: String, required: true},
   content: {type: String, required: true},
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'Author' },//stores a reference to the author now rather than the actual author information
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'Author' },//stores a reference to the author now rather than the actual author information, must be an id that is for an object in the authors collection
   comments: [commentSchema]
 });
 
 blogSchema.pre('find', function(next) {//Mongoose middleware that populates the author field when we make get requests to all the blog posts
-  this.populate('author');
+  this.populate('author');//take the id, find it in the author, and replace it with the actual object
   next();
 });
 

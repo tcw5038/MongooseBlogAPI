@@ -17,7 +17,7 @@ app.use(express.json());
 app.get('/posts', (req, res) => {//retrieves all of the blogposts in the database
   BlogPost.find()
     .then(blogPosts => {
-      res.json(blogPosts.map(post => {
+      res.json(blogPosts.map(post => {//recall that map allows us to return a new array 
         return {
           id: post._id,
           author: post.nameString,
@@ -36,7 +36,7 @@ app.get('/posts', (req, res) => {//retrieves all of the blogposts in the databas
 app.get('/posts/:id', (req, res) => {//get to specific post through accessing "$oid"
   BlogPost.findById(req.params.id)
     .then(blogPost => {
-      res.json({
+      res.json({//response object containing the requested post
         id: blogPost._id,
         author: blogPost.authorName,
         content: blogPost.content,
@@ -52,9 +52,9 @@ app.get('/posts/:id', (req, res) => {//get to specific post through accessing "$
 
 //DONE: works in postman
 app.get('/authors', (req, res) => {//get request to all authors
-  Author.find()
+  Author.find()//general find() to all of the available authors in the database
     .then(authors => {
-      res.json(authors.map(author => {
+      res.json(authors.map(author => {//once all the authors are found, map them to a new array and return them in our json response
         return{
           id:author._id,
           name:`${author.firstName} ${author.lastName}`,
@@ -69,25 +69,42 @@ app.get('/authors', (req, res) => {//get request to all authors
 });
 
 //HELP
+
 app.post('/posts', (req, res) => {
   const requiredFields = ['title', 'content', 'author_id'];
-  for (let i = 0; i < requiredFields.length; i++){
-    const field = requiredFields[i];
-    if(!(field in req.body)){
-      const errorMessage = `Missing ${field} in request body`;
-      console.error(errorMessage);
-      return res.status(400).send(errorMessage);
+  requiredFields.forEach(field => {
+    if (!(field in req.body)) {
+      const message = `Missing \`${field}\` in request body`;
+      console.error(message);
+      return res.status(400).send(message);
     }
-  }
-  BlogPost.create({
-    title: req.body.title,
-    content: req.body.content,
-    author_id: req.body.author
-  })
-    .then(blogPost => res.status(201).json(blogPost.serialize()))
+  });
+
+  Author
+    .findById(req.body.author_id)
+    .then(author => {
+      if (author) {
+        BlogPost
+          .create({
+            title: req.body.title,
+            content: req.body.content,
+            author: req.body.id
+          })
+          .then(blogPost => res.status(201).json(blogPost.serialize()))
+          .catch(err => {
+            console.error(err);
+            res.status(500).json({ error: 'Something went wrong' });
+          });
+      }
+      else {
+        const message = 'Author not found';
+        console.error(message);
+        return res.status(400).send(message);
+      }
+    })
     .catch(err => {
       console.error(err);
-      res.status(500).json({message: 'internal server error'});
+      res.status(500).json({ error: 'something went horribly awry' });
     });
 });
 
@@ -119,7 +136,7 @@ app.post('/authors', (req, res) => {
     });
 });
 
-//DONE: sort of works in postman...updates
+//DONE: works in postman
 app.put('/posts/:id', (req, res) => {
   if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
     const message =
@@ -139,7 +156,7 @@ app.put('/posts/:id', (req, res) => {
   });
 
   BlogPost
-    .findByIdAndUpdate(req.params.id, { $set: toUpdate })
+    .findByIdAndUpdate(req.params.id, { $set: toUpdate }, {new:true} )//make sure to add new:true 
     .then(blogPost => res.status(200).json({//200 status meaning that the request succeeded and we are showing the result of our put request
       id: blogPost.id,
       title: blogPost.title,
@@ -168,24 +185,24 @@ app.put('/authors/:id', (req, res) => {
     }
   });
   let updatedUsername = toUpdate.userName;//stores the updated username so that it can be used as an identifier
-  //HELP!!!
+
   Author
-    .findOne({})//we want to check to see if the updated username is already taken by someone else in the system
-    .then(authorName => {
-      if(){//author name is taken
-        const message = "This username is already taken";
+    .findOne({ userName: updatedUsername.userName || '', _id: { $ne: req.params.id } })//we want to check to see if the updated username is already taken by someone else in the system
+    .then(author => {
+      if(author){//author name is taken
+        const message = 'This username is already taken';
         return res.status(400).send(message);
       }
       else {//update the author
         Author
-        .findByIdAndUpdate()//finds the id of the author
-        .then(author => { res.status(200).json({//200 status meaning that the request succeeded and we are showing the result of our put request
-          id: author.id,
-          name: `${author.firstName} ${author.lastName}`,
-          userName: author.userName
-        });
-      })
-        .catch(err => res.status(500).json({ message: 'Internal server error' }));
+          .findByIdAndUpdate(req.params.id, { $set: toUpdate }, { new: true })//finds the id of the author
+          .then(updatedAuthor => { res.status(200).json({//200 status meaning that the request succeeded and we are showing the result of our put request
+            id: updatedAuthor.id,
+            name: `${updatedAuthor.firstName} ${updatedAuthor.lastName}`,
+            userName: updatedAuthor.userName
+          });
+          })
+          .catch(err => res.status(500).json({ message: 'Internal server error' }));
 
       }
     });
@@ -198,19 +215,17 @@ app.delete('/posts/:id', (req, res) =>{
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
-//Doesn't work...help
-
 app.delete('/authors/:id', (req, res) =>{
   BlogPost.remove({author: req.params.id})//removes any blog posts with a reference to this specific author
     .then(() => {
       Author.findByIdAndRemove(req.params.id)//removes the actual author
-        .then(() => {res.status(204).end();
+        .then(() => {res.status(204).end();//no content success code
         });
     })
     .catch(err => res.status(500).json({ message: 'Internal server error' }));
 });
 
-app.use('*', function(req, res) {
+app.use('*', function(req, res) {//wild card for if the user tries to make a request to something that doesn't exist
   res.status(404).json({ message: 'Not Found' });
 });
 
@@ -256,5 +271,11 @@ function closeServer() {
 if (require.main === module) {
   runServer(DATABASE_URL).catch(err => console.error(err));
 }
-
+/*
+When a file is run directly from Node.js, require.main is set to its module. 
+That means that it is possible to determine whether a file has been run directly by testing require.main === module.
+For a file foo.js, this will be true if run via node foo.js, but false if run by require('./foo').
+Because module provides a filename property (normally equivalent to __filename), 
+the entry point of the current application can be obtained by checking require.main.filename.
+*/
 module.exports = { app, runServer, closeServer };

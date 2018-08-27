@@ -5,7 +5,8 @@
   "repository": "https://github.com/tcw5038/MongooseBlogAPI",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "mocha"
   },
   "author": "Tyler Warrick",
   "license": "ISC",
